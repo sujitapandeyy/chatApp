@@ -12,18 +12,28 @@ class MessageController extends Controller
 {
     public function index()
     {
-        return message::with('user')->latest()->get();
-    }
+        $userId = Auth::id();
 
-    public function store(Request $request)
-    {
-        $request->validate(['message' => 'required']);
+        return Message::with(['sender', 'receiver'])
+        ->where(function ($query) use ($userId) {
+            $query->where('user_id', $userId) 
+                  ->orWhere('receiver_id', $userId); 
+        });
+        }
 
-        $message = Message::create([
-            'user_id' => Auth::id(),
-            'message' => $request->message,
-        ]);
-
-        return response()->json($message);
-    }
+        public function store(Request $request)
+        {
+            $request->validate([
+                'message' => 'required',
+                'receiver_id' => 'required|exists:users,id', 
+            ]);
+        
+            $message = Message::create([
+                'user_id' => Auth::id(),
+                'receiver_id' => $request->receiver_id,
+                'message' => $request->message,
+            ]);
+        
+            return response()->json($message);
+        }
 }
